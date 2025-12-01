@@ -1,0 +1,33 @@
+\section{Numerical Results}
+
+We perform a comparative analysis of the stochastic duration and convexity under RMV and RFV specifications. We calibrate the Vasicek model using the parameters from \cite{Dial2019} (Table 5.1): $r_0 = 0.04$, $\kappa = 0.15$, $\sigma = 0.01$, $\theta = 0.0522$, $L = 0.4$, and $\Lambda_0 = 0.025$. We analyze a 10-year bond ($T=10$) and vary the sensitivity of the default intensity to interest rates, $\Lambda_1$, from -0.10 to 0.10.
+
+\subsection{Duration Gap Analysis}
+Figure \ref{fig:duration} displays the stochastic duration of the bond under both recovery assumptions.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../figures/duration_comparison.png}
+    \caption{Stochastic Duration Comparison: RMV vs. RFV. The top panel shows absolute duration levels; the bottom panel shows the relative difference.}
+    \label{fig:duration}
+\end{figure}
+
+We observe that $D_{RMV}$ is consistently higher than $D_{RFV}$ across the entire range of $\Lambda_1$.
+\begin{itemize}
+    \item \textbf{Baseline ($\Lambda_1 = 0$):} Even with zero correlation between default and rates, there is a significant gap. The RMV duration is approximately 5.18 years, while the RFV duration is 4.90 years.
+    \item \textbf{Relative Error:} The relative error, defined as $(D_{RFV} - D_{RMV}) / D_{RFV}$, is approximately -6\% when $\Lambda_1$ is positive. This implies that using an RMV model to hedge an RFV instrument results in a hedge ratio that is 6\% too large.
+\end{itemize}
+
+The RMV assumption implies that as interest rates rise (and bond prices fall), the recovery value—being a fraction of the market price—also falls. This creates a "double sensitivity" to rates. In the RFV model, the recovery is fixed at $(1-L)$ of par, providing a buffer that dampens the price sensitivity.
+
+\subsection{Convexity Analysis}
+Figure \ref{fig:convexity} illustrates the convexity profiles.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../figures/convexity_comparison.png}
+    \caption{Stochastic Convexity Comparison: RMV vs. RFV. The RMV model consistently overestimates the convexity.}
+    \label{fig:convexity}
+\end{figure}
+
+Consistent with the duration results, $C_{RMV}$ significantly exceeds $C_{RFV}$. The gap is approximately 2.0 units. This result indicates that standard RMV models overestimate the "convexity-on-convexity" effect. By assuming the recovery value is sensitive to the asset price (which is itself convex in yields), the RMV model compounds the convexity. The RFV model, with its fixed recovery cash flow, removes one layer of this convexity, resulting in a lower gamma profile.

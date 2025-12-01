@@ -1,0 +1,73 @@
+\section{Theoretical Framework}
+
+In this section, we derive the pricing and sensitivity dynamics of a defaultable zero-coupon bond under the Recovery of Face Value (RFV) assumption. We assume a filtered probability space $(\Omega, \mathcal{F}, (\mathcal{F}_t)_{t \ge 0}, \mathbb{P})$ supporting a short rate process $r(t)$ and a default intensity process $\lambda(t)$.
+
+\subsection{Pricing Equation}
+Under the RFV specification, the bond holder receives the face value (normalized to 1) at maturity $T$ if no default occurs, or a fixed recovery fraction $w = (1-L)$ of the face value at the instant of default $\tau$ if $\tau \le T$. The price at time $t$ is given by:
+\begin{equation}
+    P^{RFV}(t, T) = \mathbb{E}_t^{\mathbb{Q}} \left[ e^{-\int_t^T r(u) du} \mathbf{1}_{\{\tau > T\}} + \int_t^T e^{-\int_t^s r(u) du} w \mathbf{1}_{\{\tau \in ds\}} \right]
+\end{equation}
+Using the standard reduced-form pricing result \cite{Lando1998}, we can express this in terms of the default intensity $\lambda(t)$:
+\begin{equation}
+    P^{RFV}(t, T) = \underbrace{\mathbb{E}_t^{\mathbb{Q}} \left[ e^{-\int_t^T (r(u) + \lambda(u)) du} \right]}_{V_{surv}(t, T)} + \underbrace{w \int_t^T \mathbb{E}_t^{\mathbb{Q}} \left[ \lambda(s) e^{-\int_t^s (r(u) + \lambda(u)) du} \right] ds}_{V_{rec}(t, T)}
+\end{equation}
+Here, $V_{surv}$ represents the value of the survival claim, and $V_{rec}$ represents the present value of the recovery payments.
+
+\subsection{Affine Dynamics}
+We assume the default intensity is an affine function of the short rate:
+\begin{equation}
+    \lambda(t) = \Lambda_0 + \Lambda_1 r(t)
+\end{equation}
+Consequently, the "risk-adjusted" or "effective" discount rate for the survival component becomes:
+\begin{equation}
+    k(t) \equiv r(t) + \lambda(t) = \Lambda_0 + (1 + \Lambda_1)r(t)
+\end{equation}
+Assuming $r(t)$ follows a Vasicek process $dr(t) = \kappa(\theta - r(t))dt + \sigma dW(t)$, the survival value $V_{surv}$ admits a closed-form affine solution:
+\begin{equation}
+    V_{surv}(t, T) = e^{A^*(\tau) - B^*(\tau)r(t)}
+\end{equation}
+where $B^*(\tau) = \frac{1+\Lambda_1}{\kappa}(1 - e^{-\kappa \tau})$ and $A^*(\tau)$ is determined by the standard Riccati equations adjusted for the effective rate $k(t)$.
+
+\subsection{Measure Change and Recovery Value}
+The recovery component $V_{rec}$ involves the expectation of the product of the discount factor and the intensity. To evaluate the integrand $\mathbb{E}_t^{\mathbb{Q}} [ \lambda(s) e^{-\int_t^s k(u) du} ]$, it is convenient to switch to the $s$-forward measure $\mathbb{Q}^s$ associated with the numeraire $N(t) = e^{\int_0^t k(u) du}$. However, since $k(u)$ is stochastic, we proceed by identifying the expectation as the price of a security paying $\lambda(s)$ at time $s$, discounted by $k$.
+
+Let $D(t, s) = \mathbb{E}_t^{\mathbb{Q}} [ e^{-\int_t^s k(u) du} ] = V_{surv}(t, s)$. We can rewrite the integrand as:
+\begin{equation}
+    \mathbb{E}_t^{\mathbb{Q}} \left[ \lambda(s) e^{-\int_t^s k(u) du} \right] = D(t, s) \cdot \mathbb{E}_t^{\mathbb{Q}^s} [\lambda(s)]
+\end{equation}
+where $\mathbb{Q}^s$ is the measure defined by the Radon-Nikodym derivative related to the bond price $V_{surv}(t, s)$. Under the affine specification, the expectation of $\lambda(s)$ under $\mathbb{Q}^s$ is:
+\begin{equation}
+    \mathbb{E}_t^{\mathbb{Q}^s} [\lambda(s)] = \Lambda_0 + \Lambda_1 \mathbb{E}_t^{\mathbb{Q}^s} [r(s)]
+\end{equation}
+The expectation of the short rate under the forward measure includes a convexity adjustment (Girsanov shift) relative to the physical measure expectation:
+\begin{equation}
+    \mathbb{E}_t^{\mathbb{Q}^s} [r(s)] = \text{Mean}^{\mathbb{P}}(r(s)) - \text{Shift}(t, s)
+\end{equation}
+where the shift term arises from the correlation between the interest rate and the bond price volatility:
+\begin{equation}
+    \text{Shift}(t, s) = \int_0^{s-t} e^{-\kappa(s-t-u)} \sigma^2 B^*(u) du
+\end{equation}
+
+\subsection{Analytical Derivation of Stochastic Duration}
+The stochastic duration is defined as the semi-elasticity of the price with respect to the short rate $D(t, T) = -\frac{1}{P} \frac{\partial P}{\partial r(t)}$. 
+Applying Leibniz's rule to the pricing equation, we obtain:
+\begin{equation}
+    \frac{\partial P^{RFV}}{\partial r} = \frac{\partial V_{surv}}{\partial r} + w \int_t^T \left( \frac{\partial V_{surv}(t, s)}{\partial r} \mathbb{E}_t^{\mathbb{Q}^s}[\lambda(s)] + V_{surv}(t, s) \frac{\partial \mathbb{E}_t^{\mathbb{Q}^s}[\lambda(s)]}{\partial r} \right) ds
+\end{equation}
+
+Under the Vasicek specification, we can solve for these partial derivatives explicitly.
+First, the sensitivity of the survival component is determined by the affine coefficient $B^*$:
+\begin{equation}
+    \frac{\partial V_{surv}(t, s)}{\partial r} = -B^*(s-t) V_{surv}(t, s)
+\end{equation}
+
+Second, the sensitivity of the expected default intensity depends on the mean reversion of the short rate. Recall that $\mathbb{E}^{\mathbb{Q}^s}[\lambda(s)] = \Lambda_0 + \Lambda_1 (\text{Mean}^{\mathbb{P}} - \text{Shift})$. The shift term is deterministic and does not depend on $r(t)$. Thus:
+\begin{equation}
+    \frac{\partial \mathbb{E}_t^{\mathbb{Q}^s}[\lambda(s)]}{\partial r} = \Lambda_1 \frac{\partial}{\partial r} \left( r(t)e^{-\kappa(s-t)} + \theta(1-e^{-\kappa(s-t)}) \right) = \Lambda_1 e^{-\kappa(s-t)}
+\end{equation}
+
+Substituting these back yields the final analytical expression for the sensitivity of the recovery component:
+\begin{equation}
+    \frac{\partial V_{rec}}{\partial r} = w \int_t^T V_{surv}(t, s) \left[ \underbrace{-B^*(s-t) \mathbb{E}_t^{\mathbb{Q}^s}[\lambda(s)]}_{\text{Discount Effect}} + \underbrace{\Lambda_1 e^{-\kappa(s-t)}}_{\text{Payoff Effect}} \right] ds
+\end{equation}
+This explicit formula highlights why RMV fails: RMV assumes the recovery value sensitivity is driven solely by the discount effect (via the adjusted rate), ignoring the distinct decay rate ($e^{-\kappa \tau}$) of the default intensity expectation.
