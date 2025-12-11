@@ -35,22 +35,21 @@ class VasicekRFV:
         res, _ = quad(integrand, 0, tau)
         return res
 
-    def survival_value(self, t, T):
+    def survival_value(self, t, T, r=None):
         """
         Calculates V_surv(t, T) = E[exp(-integral_t^T k(u) du)]
         V_surv(t, T) = exp(A*(tau) - B*(tau) * r(t))
+
+        Args:
+            t: Current time
+            T: Maturity time
+            r: Current short rate r(t). If None, uses self.r0
         """
         tau = T - t
         a_val = self._a_star(tau)
         b_val = self._b_star(tau)
-        # Note: Current short rate r(t) is assumed to be self.r0 if t=0, 
-        # but for general t we need r(t). 
-        # The prompt implies pricing at t=0 with r0, or general t.
-        # Given the signature price(t, T), we need r(t).
-        # We will assume r(t) = self.r0 for the purpose of the 'price' method called at t=0,
-        # or we should pass r_t. The prompt signature is price(t, T).
-        # We will use self.r0 as the current rate r(t).
-        return np.exp(a_val - b_val * self.r0)
+        rate = self.r0 if r is None else r
+        return np.exp(a_val - b_val * rate)
 
     def expected_lambda(self, t, u):
         """
@@ -71,83 +70,71 @@ class VasicekRFV:
         e_r_u = mean_p - shift
         return self.lambda_0 + self.lambda_1 * e_r_u
 
-    def price(self, t, T):
+    def price(self, t, T, r=None):
         """
         Calculates the RFV bond price: Survival Value + Recovery Value.
+
+        Args:
+            t: Current time
+            T: Maturity time
+            r: Current short rate r(t). If None, uses self.r0
         """
         # 1. Survival Value
-        v_surv = self.survival_value(t, T)
-        
+        v_surv = self.survival_value(t, T, r)
+
         # 2. Recovery Value
         # V_rec = (1-L) * integral_t^T V_surv(t, u) * E[lambda(u)] du
         w = 1 - self.L
-        
+
         def recovery_integrand(u):
-            # V_surv(t, u)
-            surv_u = self.survival_value(t, u)
+            # V_surv(t, u) - use same rate for consistency
+            surv_u = self.survival_value(t, u, r)
             # E[lambda(u)]
             e_lam = self.expected_lambda(t, u)
             return surv_u * e_lam
-        
+
         v_rec_integral, _ = quad(recovery_integrand, t, T)
         v_rec = w * v_rec_integral
-        
+
         return v_surv + v_rec
 
     def duration(self, t, T):
         """
         Calculates duration using central finite difference.
-        Shift r0 by +/- 1bp.
+        Duration = -(1/P) * (dP/dr) where the derivative is approximated
+        by shifting r by +/- 1 basis point.
         """
-        original_r0 = self.r0
-        shift = 0.0001 # 1bp
-        
-        # Price up
-        self.r0 = original_r0 + shift
-        p_up = self.price(t, T)
-        
-        # Price down
-        self.r0 = original_r0 - shift
-        p_down = self.price(t, T)
-        
-        # Reset r0
-        self.r0 = original_r0
-        
-        # Base price
-        p0 = self.price(t, T)
-        
-        # Duration = - (1/P) * (dP/dr)
-        # dP/dr approx (p_up - p_down) / (2*shift)
+        shift = 0.0001  # 1 basis point
+
+        # Calculate prices at shifted rates
+        p_up = self.price(t, T, r=self.r0 + shift)
+        p_down = self.price(t, T, r=self.r0 - shift)
+        p_base = self.price(t, T, r=self.r0)
+
+        # Central finite difference: dP/dr ≈ (P(r+ε) - P(r-ε)) / (2ε)
         dp_dr = (p_up - p_down) / (2 * shift)
-        
-        return - (1 / p0) * dp_dr
+
+        # Duration = -(1/P) * (dP/dr)
+        return -(1 / p_base) * dp_dr
 
     def convexity(self, t, T):
         """
         Calculates convexity using central finite difference.
-        C = (P(r+e) - 2P(r) + P(r-e)) / (P(r) * e^2)
+        Convexity = (1/P) * (d²P/dr²) where the second derivative is
+        approximated using: (P(r+ε) - 2P(r) + P(r-ε)) / ε²
         """
-        original_r0 = self.r0
-        epsilon = 1e-4
-        
-        # Price up
-        self.r0 = original_r0 + epsilon
-        p_up = self.price(t, T)
-        
-        # Price down
-        self.r0 = original_r0 - epsilon
-        p_down = self.price(t, T)
-        
-        # Reset r0
-        self.r0 = original_r0
-        
-        # Base price
-        p0 = self.price(t, T)
-        
-        # Convexity
-        convexity = (p_up - 2 * p0 + p_down) / (p0 * epsilon**2)
-        
-        return convexity
+        epsilon = 1e-4  # Small perturbation
+
+        # Calculate prices at shifted rates
+        p_up = self.price(t, T, r=self.r0 + epsilon)
+        p_down = self.price(t, T, r=self.r0 - epsilon)
+        p_base = self.price(t, T, r=self.r0)
+
+        # Central finite difference: d²P/dr² ≈ (P(r+ε) - 2P(r) + P(r-ε)) / ε²
+        d2p_dr2 = (p_up - 2 * p_base + p_down) / (epsilon ** 2)
+
+        # Convexity = (1/P) * (d²P/dr²)
+        return (1 / p_base) * d2p_dr2
 
 if __name__ == "__main__":
     # Parameters for Verification
